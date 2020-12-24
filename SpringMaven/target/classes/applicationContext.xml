@@ -1,0 +1,85 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<beans xmlns="http://www.springframework.org/schema/beans"
+       xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:util="http://www.springframework.org/schema/util"
+       xsi:schemaLocation="http://www.springframework.org/schema/beans http://www.springframework.org/schema/beans/spring-beans.xsd http://www.springframework.org/schema/util http://www.springframework.org/schema/util/spring-util.xsd">
+
+
+    <!-- 定义被代理者 -->
+    <bean id="h1" class="com.test.HelloWorldImpl1"></bean>
+    <bean id="h2" class="com.test.HelloWorldImpl2"></bean>
+
+    <!-- 定义通知内容，也就是切入点执行前后需要做的事情 -->
+    <bean id="timeHandler" class="com.test.TimeHandler"></bean>
+
+    <!-- 定义切入点位置，这里定义到了doPrint方法上 -->
+    <bean id="timePointcut" class="org.springframework.aop.support.JdkRegexpMethodPointcut">
+        <property name="pattern" value=".*doPrint"></property>
+    </bean>
+
+    <!-- 使切入点与通知相关联，完成切面配置 -->
+    <bean id="timeHandlerAdvisor" class="org.springframework.aop.support.DefaultPointcutAdvisor">
+        <property name="advice" ref="timeHandler"></property>
+        <property name="pointcut" ref="timePointcut"></property>
+    </bean>
+
+    <!-- 设置代理 -->
+    <bean id="proxy" class="org.springframework.aop.framework.ProxyFactoryBean">
+        <!-- 代理的对象，有打印时间能力 -->
+        <property name="target" ref="h1"></property>
+        <!-- 使用切面 -->
+        <property name="interceptorNames" value="timeHandlerAdvisor"></property>
+        <!-- 代理接口，hw接口 -->
+        <property name="proxyInterfaces" value="com.test.HelloWorld"></property>
+    </bean>
+    <!-- 设置代理 -->
+    <bean id="proxy2" class="org.springframework.aop.framework.ProxyFactoryBean">
+        <!-- 代理的对象，有打印时间能力 -->
+        <property name="target" ref="h2"></property>
+        <!-- 使用切面 -->
+        <property name="interceptorNames" value="timeHandlerAdvisor"></property>
+        <!-- 代理接口，hw接口 -->
+        <property name="proxyInterfaces" value="com.test.HelloWorld"></property>
+    </bean>
+
+    <!--启用shiro注解拦截方式 -->
+    <bean id="shiroFilter" class="org.apache.shiro.spring.web.ShiroFilterFactoryBean">
+
+        <!--装配securityMannager -->
+        <property name="securityManager" ref="securityManager"/>
+        <!--配置登录首页-->
+        <property name="loginUrl" value="/index,jsp"/>
+        <!--成功后发页面-->
+        <property name="successUrl" value="/jsp/success.jsp"/>
+
+
+        <property name="filterChainDefinitionMap">
+            <value>
+                  /index.jsp=anon
+                  /jsp/success.jsp=anon
+                  /jsp/fail.jsp=anon
+                  /jsp/user.jsp=roles[user]
+                  /jsp/admin.jsp=roles[admin]
+                  /logout=logout
+            </value>
+        </property>
+      </bean>
+
+      <!--配置缓存管理器-->
+      <bean id="cacheManager" class="org.apache.shiro.cache.ehcache.EhCacheManager">
+            <!--指定ehcache的配置文件内-->
+            <property name="cacheManagerConfigFile" value="classpath:ehcache-shiro.xml"/>
+      </bean>
+
+      <!--配置授权认证的realm-->
+    <!--<bean id="myRealm" class="com.shiro.base.myShiroRealm">-->
+        <!--<property name="userService" ref="userService"/>-->
+    <!--</bean>-->
+    <bean id="userservice" class="com.shiro.service.impl.userServiceImpl"/>
+
+    <!--配置shirod SecurityManager Bean-->
+    <bean id="securityManager" class="org.apache.shiro.web.mgt.DefaultWebSecurityManager">
+        <property name="cacheManager" ref="cacheManager"/>
+        <property name="realm" ref="myRealm"/>
+     </bean>
+
+</beans>
